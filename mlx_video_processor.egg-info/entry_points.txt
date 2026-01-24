@@ -1,0 +1,2 @@
+[console_scripts]
+mlx-video = mlx_video_processor.cli:main

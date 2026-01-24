@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLX Video Processor</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    <span class="logo-text">MLX Video Processor</span>
+                </div>
+                <div class="header-subtitle">Apple ML Models on Apple Silicon</div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section id="upload-section" class="section upload-section">
+                <h2 class="section-title">Upload Video</h2>
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p class="drop-text">Drag and drop your video here</p>
+                        <p class="drop-subtext">or click to browse</p>
+                        <p class="drop-formats">Supported: MP4, MOV, AVI, MKV, WebM (max 500MB)</p>
+                    </div>
+                    <input type="file" id="file-input" accept=".mp4,.mov,.avi,.mkv,.webm" hidden>
+                </div>
+
+                <!-- Video Info -->
+                <div id="video-info" class="video-info hidden">
+                    <div class="video-preview">
+                        <video id="preview-video" controls></video>
+                    </div>
+                    <div class="video-details">
+                        <h3 id="video-filename">video.mp4</h3>
+                        <div class="video-stats">
+                            <span id="video-resolution">1920x1080</span>
+                            <span id="video-duration">0:00</span>
+                            <span id="video-fps">30 FPS</span>
+                            <span id="video-frames">0 frames</span>
+                        </div>
+                        <button id="change-video-btn" class="btn btn-secondary btn-sm">Change Video</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Model Selection -->
+            <section id="model-section" class="section model-section hidden">
+                <h2 class="section-title">Select Models</h2>
+                <p class="section-description">Choose one or more models to process your video</p>
+
+                <div class="warning-banner">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-content">
+                        <h4>Prototype Mode - No Pretrained Weights</h4>
+                        <p>These models are currently running without pretrained weights, so the output will show random/placeholder predictions. To use real detection, you need to download and load the actual model weights from Apple's ML models page or convert CoreML models to MLX format.</p>
+                    </div>
+                </div>
+
+                <div id="model-grid" class="model-grid">
+                    <!-- Models will be populated by JavaScript -->
+                </div>
+
+                <!-- Processing Options -->
+                <div class="options-panel">
+                    <h3>Processing Options</h3>
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <label for="frame-interval">Frame Interval</label>
+                            <select id="frame-interval">
+                                <option value="1">Every frame</option>
+                                <option value="2">Every 2nd frame</option>
+                                <option value="5">Every 5th frame</option>
+                                <option value="10">Every 10th frame</option>
+                                <option value="15">Every 15th frame</option>
+                                <option value="30">Every 30th frame</option>
+                            </select>
+                            <span class="option-hint">Higher = faster processing</span>
+                        </div>
+                        <div class="option-group">
+                            <label for="confidence">Confidence Threshold</label>
+                            <input type="range" id="confidence" min="0.1" max="0.9" step="0.1" value="0.5">
+                            <span class="option-value" id="confidence-value">0.5</span>
+                            <span class="option-hint">For detection models</span>
+                        </div>
+                        <div class="option-group">
+                            <label for="max-frames">Max Frames</label>
+                            <input type="number" id="max-frames" placeholder="All frames" min="1">
+                            <span class="option-hint">Leave empty for all frames</span>
+                        </div>
+                        <div class="option-group">
+                            <label for="target-objects">Target Objects (optional)</label>
+                            <input type="text" id="target-objects" placeholder="e.g., person, car, dog">
+                            <span class="option-hint">Comma-separated list to filter detections</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="process-btn" class="btn btn-primary btn-lg" disabled>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    Start Processing
+                </button>
+            </section>
+
+            <!-- Processing Section -->
+            <section id="processing-section" class="section processing-section hidden">
+                <h2 class="section-title">Processing</h2>
+
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <span id="progress-status">Initializing...</span>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <div class="stat">
+                            <span class="stat-label">Frame</span>
+                            <span id="current-frame" class="stat-value">0 / 0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Speed</span>
+                            <span id="processing-fps" class="stat-value">0 FPS</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Elapsed</span>
+                            <span id="elapsed-time" class="stat-value">0:00</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Model</span>
+                            <span id="current-model" class="stat-value">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="logs-container">
+                    <h3>Processing Log</h3>
+                    <div id="logs" class="logs"></div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-section" class="section results-section hidden">
+                <h2 class="section-title">Results</h2>
+
+                <div class="video-comparison">
+                    <div class="comparison-panel">
+                        <h3>Original</h3>
+                        <video id="original-video" controls></video>
+                    </div>
+                    <div class="comparison-panel">
+                        <h3>Processed</h3>
+                        <video id="processed-video" controls></video>
+                    </div>
+                </div>
+
+                <div class="results-actions">
+                    <button id="download-btn" class="btn btn-primary">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Download Processed Video
+                    </button>
+                    <button id="new-video-btn" class="btn btn-secondary">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Process New Video
+                    </button>
+                </div>
+
+                <div class="processing-summary">
+                    <h3>Processing Summary</h3>
+                    <div id="summary-content" class="summary-content"></div>
+                </div>
+
+                <div class="detection-results" id="detection-results">
+                    <h3>Detection Results</h3>
+                    <div id="detection-stats" class="detection-stats"></div>
+                    <div id="detected-objects-list" class="objects-list"></div>
+                </div>
+            </section>
+
+            <!-- Gallery Section -->
+            <section id="gallery-section" class="section gallery-section">
+                <h2 class="section-title">Recent Results</h2>
+                <div id="gallery-grid" class="gallery-grid">
+                    <!-- Gallery items populated by JavaScript -->
+                </div>
+                <p id="gallery-empty" class="gallery-empty hidden">No processed videos yet</p>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by MLX on Apple Silicon</p>
+            <p class="footer-models">FastViT | YOLOv3 | DeepLabV3 | Depth Anything V2 | DETR</p>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

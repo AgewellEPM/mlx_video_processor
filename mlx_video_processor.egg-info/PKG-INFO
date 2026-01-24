@@ -1,0 +1,411 @@
+Metadata-Version: 2.4
+Name: mlx-video-processor
+Version: 0.1.0
+Summary: Modular video processing with Apple ML models using MLX on Apple Silicon
+Author: MLX Video Processor Team
+License: MIT
+Project-URL: Homepage, https://github.com/example/mlx-video-processor
+Project-URL: Documentation, https://github.com/example/mlx-video-processor#readme
+Project-URL: Repository, https://github.com/example/mlx-video-processor
+Keywords: mlx,apple-silicon,video-processing,computer-vision,deep-learning
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: MacOS
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Multimedia :: Video
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: mlx>=0.10.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: pillow>=10.0.0
+Requires-Dist: opencv-python>=4.8.0
+Requires-Dist: tqdm>=4.65.0
+Requires-Dist: coremltools>=7.0
+Requires-Dist: huggingface-hub>=0.20.0
+Provides-Extra: web
+Requires-Dist: fastapi>=0.104.0; extra == "web"
+Requires-Dist: uvicorn[standard]>=0.24.0; extra == "web"
+Requires-Dist: python-multipart>=0.0.6; extra == "web"
+Requires-Dist: websockets>=12.0; extra == "web"
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Provides-Extra: all
+Requires-Dist: mlx-video-processor[dev,web]; extra == "all"
+
+# MLX Video Processor
+
+A modular video processing system that applies Apple ML models using MLX on Apple Silicon. This framework provides efficient, production-ready implementations of computer vision models optimized for M-series chips.
+
+## Features
+
+- **Modular Architecture**: Swap and combine models easily
+- **Multiple Model Types**:
+  - **FastViT T8**: Fast hybrid vision transformer for image classification
+  - **YOLOv3**: Real-time multi-object detection (80 COCO classes)
+  - **DeepLabV3**: Pixel-level semantic segmentation
+  - **Depth Anything V2**: Monocular depth estimation
+  - **DETR ResNet50**: Transformer-based object detection
+- **Optimized for Apple Silicon**: Leverages MLX's unified memory architecture
+- **Video Pipeline**: Frame extraction, processing, and output encoding
+- **Rich Visualization**: Bounding boxes, segmentation masks, depth maps
+- **CLI Interface**: Process videos from the command line
+- **Multi-Model Support**: Run multiple models on the same video
+- **Web Interface**: Browser-based UI with drag-and-drop upload and real-time progress
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/example/mlx-video-processor.git
+cd mlx-video-processor
+
+# Install core dependencies
+pip install -e .
+
+# Install with web interface
+pip install -e ".[web]"
+
+# Install with development dependencies
+pip install -e ".[dev]"
+
+# Install everything
+pip install -e ".[all]"
+```
+
+### Requirements
+
+- Python 3.10+
+- macOS with Apple Silicon (M1/M2/M3)
+- MLX 0.10.0+
+- OpenCV
+- NumPy
+
+## Quick Start
+
+### Web Interface (Recommended)
+
+The easiest way to use MLX Video Processor is through the web interface:
+
+```bash
+# Install with web dependencies
+pip install -e ".[web]"
+
+# Start the web server
+python web/run_server.py
+```
+
+This will:
+1. Start the server at http://localhost:8000
+2. Automatically open your browser
+3. Present a modern UI for video processing
+
+**Web Interface Features:**
+- Drag-and-drop video upload
+- Visual model selection with descriptions
+- Real-time progress updates via WebSocket
+- Side-by-side video comparison (original vs processed)
+- Download processed videos
+- Gallery of recent results
+
+**Server Options:**
+```bash
+python web/run_server.py --port 8080        # Custom port
+python web/run_server.py --host 0.0.0.0     # Allow external access
+python web/run_server.py --no-browser       # Don't auto-open browser
+python web/run_server.py --reload           # Dev mode with auto-reload
+```
+
+### Command Line
+
+```bash
+# Process video with YOLOv3 object detection
+mlx-video process -m yolo -i input.mp4 -o output.mp4
+
+# Process with FastViT classification
+mlx-video process -m fastvit -i input.mp4 -o classified.mp4
+
+# Run depth estimation
+mlx-video process -m depth -i input.mp4 -o depth_output.mp4
+
+# Semantic segmentation with DeepLabV3
+mlx-video process -m deeplab -i input.mp4 -o segmented.mp4
+
+# Process every 5th frame with higher confidence
+mlx-video process -m yolo -i input.mp4 -o output.mp4 --frame-interval 5 --confidence 0.7
+
+# Run multiple models simultaneously
+mlx-video multi -m yolo deeplab depth -i input.mp4 -o multi_output.mp4
+
+# List available models
+mlx-video list
+
+# Show model information
+mlx-video info -m yolo
+```
+
+### Python API
+
+```python
+from mlx_video_processor.models import YOLOv3Processor
+from mlx_video_processor.pipelines import VideoProcessor
+from mlx_video_processor.visualizers import DetectionVisualizer
+from mlx_video_processor.types import ProcessingConfig, PrecisionType
+
+# Create model
+model = YOLOv3Processor(
+    precision=PrecisionType.FLOAT16,
+    confidence_threshold=0.5,
+)
+
+# Create visualizer
+visualizer = DetectionVisualizer(show_labels=True)
+
+# Configure processing
+config = ProcessingConfig(
+    frame_interval=1,
+    max_frames=100,
+)
+
+# Process video
+processor = VideoProcessor(model, visualizer, config)
+results = processor.process_video("input.mp4", output_path="output.mp4")
+
+# Access results
+for result in results:
+    print(f"Frame {result.frame_index}: {result.detection.num_detections} objects")
+```
+
+### Multi-Model Processing
+
+```python
+from mlx_video_processor.pipelines import ModelOrchestrator
+
+# Create orchestrator
+orchestrator = ModelOrchestrator()
+
+# Add models
+orchestrator.add_model("yolo")      # Object detection
+orchestrator.add_model("deeplab")   # Segmentation
+orchestrator.add_model("depth")     # Depth estimation
+
+# Process video with all models
+results = orchestrator.process_video(
+    "input.mp4",
+    output_path="multi_output.mp4",
+)
+
+# Print performance summary
+print(orchestrator.get_performance_summary())
+```
+
+## Architecture
+
+```
+mlx_video_processor/
+├── models/               # Model implementations
+│   ├── base.py           # Base class and registry
+│   ├── fastvit.py        # FastViT classifier
+│   ├── yolo.py           # YOLOv3 detector
+│   ├── deeplab.py        # DeepLabV3 segmentation
+│   ├── depth_anything.py # Depth estimation
+│   └── detr.py           # DETR detector
+├── pipelines/            # Processing pipelines
+│   ├── video_processor.py    # Single model processing
+│   └── orchestrator.py       # Multi-model orchestration
+├── visualizers/          # Visualization components
+│   ├── detection.py      # Bounding box visualization
+│   ├── segmentation.py   # Mask visualization
+│   ├── depth.py          # Depth map visualization
+│   └── composite.py      # Combined visualization
+├── utils/                # Utilities
+│   ├── frame_extractor.py    # Video frame extraction
+│   ├── video_io.py       # Video reading/writing
+│   └── timer.py          # Performance monitoring
+├── types.py              # Data types and configs
+└── cli.py                # Command-line interface
+
+web/                      # Web Interface
+├── backend.py            # FastAPI server
+├── run_server.py         # Launch script
+├── static/
+│   ├── index.html        # Main UI
+│   ├── styles.css        # Styling
+│   └── app.js            # Frontend logic
+├── uploads/              # Uploaded videos (auto-cleaned)
+└── outputs/              # Processed videos
+```
+
+## Models
+
+### FastViT T8 (Image Classification)
+- **Parameters**: 3.6M
+- **Input**: 256x256 RGB
+- **Output**: 1000 ImageNet classes
+- **Performance**: ~0.6ms on M3 Max
+
+### YOLOv3 (Object Detection)
+- **Classes**: 80 COCO objects
+- **Input**: 416x416 RGB
+- **Output**: Bounding boxes with confidence scores
+- **Features**: Multi-scale detection, NMS
+
+### DeepLabV3 (Semantic Segmentation)
+- **Classes**: 21 PASCAL VOC classes
+- **Input**: 513x513 RGB
+- **Output**: Per-pixel class labels
+- **Features**: Atrous convolutions, ASPP
+
+### Depth Anything V2 (Depth Estimation)
+- **Parameters**: 24.8M
+- **Input**: 518x518 RGB
+- **Output**: Relative depth map
+- **Features**: DINOv2 encoder, DPT decoder
+
+### DETR ResNet50 (Detection Transformer)
+- **Parameters**: 43M
+- **Classes**: 91 COCO classes
+- **Input**: Variable size RGB
+- **Output**: Bounding boxes
+- **Features**: Transformer encoder-decoder, no NMS needed
+
+## Performance Optimization
+
+### MLX Optimizations
+- **Unified Memory**: Zero-copy data sharing between CPU and GPU
+- **Lazy Evaluation**: Efficient computation graph execution
+- **Compilation**: Use `mx.compile()` for hot paths
+- **Float16**: Reduced memory and faster computation
+
+### Pipeline Optimizations
+- **Frame Prefetching**: Overlapped I/O and computation
+- **Batch Processing**: Process multiple frames together (where supported)
+- **Configurable Intervals**: Skip frames for faster processing
+
+## Configuration
+
+See `configs/default_config.yaml` for all available options:
+
+```yaml
+processing:
+  frame_interval: 1
+  precision: float16
+  use_compile: true
+
+models:
+  yolo:
+    confidence_threshold: 0.5
+    nms_threshold: 0.45
+
+visualization:
+  detection:
+    show_labels: true
+    line_thickness: 2
+```
+
+## Examples
+
+See the `examples/` directory for detailed usage examples:
+
+- `basic_usage.py`: Individual model usage
+- `multi_model_processing.py`: Running multiple models
+
+## API Reference
+
+### ProcessingConfig
+
+```python
+ProcessingConfig(
+    frame_interval: int = 1,      # Process every Nth frame
+    start_frame: int = 0,         # Starting frame
+    end_frame: Optional[int] = None,  # Ending frame
+    max_frames: Optional[int] = None, # Max frames to process
+    batch_size: int = 1,          # Batch size
+    precision: PrecisionType = PrecisionType.FLOAT16,
+    confidence_threshold: float = 0.5,
+    use_compile: bool = True,
+)
+```
+
+### BaseModel Interface
+
+All models implement:
+- `load_model()`: Load weights
+- `preprocess(frame)`: Prepare input
+- `forward(x)`: Run inference
+- `postprocess(output, size)`: Format results
+- `process_frame(frame, idx, ts)`: Complete pipeline
+
+## Web API Reference
+
+The web interface provides a REST API that can be used programmatically:
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/models` | List available models |
+| `POST` | `/api/upload` | Upload video file |
+| `POST` | `/api/process` | Start processing job |
+| `GET` | `/api/job/{job_id}` | Get job status |
+| `WS` | `/ws/{job_id}` | WebSocket for real-time updates |
+| `GET` | `/api/video/{video_id}` | Get uploaded video |
+| `GET` | `/api/output/{filename}` | Get processed video |
+| `GET` | `/api/gallery` | List recent results |
+
+### Example API Usage
+
+```python
+import requests
+
+# Upload video
+with open("input.mp4", "rb") as f:
+    response = requests.post("http://localhost:8000/api/upload", files={"file": f})
+    video_id = response.json()["video_id"]
+
+# Start processing
+response = requests.post("http://localhost:8000/api/process", json={
+    "video_id": video_id,
+    "models": ["yolo", "depth"],
+    "frame_interval": 5,
+    "confidence_threshold": 0.5,
+})
+job_id = response.json()["job_id"]
+
+# Poll for completion
+import time
+while True:
+    status = requests.get(f"http://localhost:8000/api/job/{job_id}").json()
+    if status["status"] == "completed":
+        print(f"Done! Output: {status['output_video']}")
+        break
+    time.sleep(1)
+```
+
+## Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Acknowledgments
+
+- Apple ML Models: https://developer.apple.com/machine-learning/models/
+- MLX: https://github.com/ml-explore/mlx
+- Model architectures: FastViT, YOLO, DeepLab, Depth Anything, DETR papers

@@ -1,0 +1,109 @@
+# MLX Video Processor - Default Configuration
+# ============================================
+# This file contains default settings for video processing.
+# Copy and modify for your specific use case.
+
+# Processing Settings
+processing:
+  # Frame extraction settings
+  frame_interval: 1          # Process every Nth frame (1 = all frames)
+  start_frame: 0             # Starting frame index
+  end_frame: null            # Ending frame index (null = end of video)
+  max_frames: null           # Maximum frames to process (null = no limit)
+
+  # Batching
+  batch_size: 1              # Frames per batch (for models that support it)
+  prefetch_frames: 4         # Frames to prefetch for pipeline efficiency
+
+  # Model precision
+  precision: float16         # float32, float16, bfloat16
+  use_compile: true          # Enable MLX compilation for speed
+
+# Output Settings
+output:
+  width: null                # Output width (null = same as input)
+  height: null               # Output height (null = same as input)
+  fps: null                  # Output FPS (null = input FPS / frame_interval)
+  codec: null                # Video codec (null = auto-detect)
+
+# Model-Specific Settings
+models:
+  # FastViT Image Classification
+  fastvit:
+    enabled: true
+    top_k: 5                 # Number of top predictions to return
+    class_file: null         # Custom class names file (null = ImageNet)
+
+  # YOLOv3 Object Detection
+  yolo:
+    enabled: true
+    confidence_threshold: 0.5
+    nms_threshold: 0.45
+    class_file: null         # Custom class names file (null = COCO)
+
+  # DeepLabV3 Semantic Segmentation
+  deeplab:
+    enabled: true
+    output_stride: 16        # 8 or 16 (8 = higher resolution, slower)
+    class_file: null         # Custom class names file (null = VOC)
+
+  # Depth Anything V2
+  depth:
+    enabled: true
+    normalize_output: true   # Normalize depth to [0, 1]
+
+  # DETR Detection
+  detr:
+    enabled: true
+    confidence_threshold: 0.7
+    num_queries: 100         # Number of object queries
+
+# Visualization Settings
+visualization:
+  enabled: true
+
+  # Detection visualization
+  detection:
+    show_labels: true
+    show_confidence: true
+    line_thickness: 2
+    font_scale: 0.5
+
+  # Segmentation visualization
+  segmentation:
+    opacity: 0.5
+    show_legend: true
+    show_boundaries: true
+
+  # Depth visualization
+  depth:
+    colormap: magma          # magma, viridis, plasma, inferno, jet, turbo, gray
+    invert: false
+    show_colorbar: true
+    show_stats: true
+    blend_mode: overlay      # overlay, side_by_side, depth_only
+
+  # Classification visualization
+  classification:
+    show_top_k: 5
+    bar_width: 200
+    position: top_left       # top_left, top_right, bottom_left, bottom_right
+
+  # Composite visualization
+  composite:
+    layout: overlay          # overlay or grid
+    show_fps: true
+    show_frame_info: true
+
+# Performance Settings
+performance:
+  # Memory management
+  max_memory_mb: null        # Maximum GPU memory to use (null = no limit)
+
+  # Timing
+  print_timing: false        # Print timing information during processing
+
+# Logging Settings
+logging:
+  level: INFO                # DEBUG, INFO, WARNING, ERROR
+  file: null                 # Log file path (null = console only)
